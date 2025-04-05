@@ -27,7 +27,7 @@ import shutil
 from time import time
 from PyQt5.QtWidgets import QDialog
 from pathlib import Path
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from operator import itemgetter
 from typing import *
 
