@@ -575,23 +575,40 @@ class XRefer:
                                 self.caller_xrefs_cache[start][ref.to] = {ref.frm}
 
     def get_user_xrefs(self, user_xrefs_path: str):
+        """
+        Parses a file containing comma-separated hexadecimal cross-references.
+        Ignores comments (starting with '#') and blank lines.
+        """
+        _xrefs = []
         try:
-            _xrefs = []
-
             with open(user_xrefs_path, 'r') as infile:
-                xrefs = infile.read().splitlines()
+                # Iterate over the file line by line, which is memory-efficient
+                for line in infile:
+                    # Remove comments and strip leading/trailing whitespace
+                    clean_line = line.split('#', 1)[0].strip()
 
-            for line in xrefs:
-                if len(line) > 1:
-                    xref_tup = line.split(',')
-                    xref_frm = int(xref_tup[0].strip(), 16)
-                    xref_to = int(xref_tup[1].strip(), 16)
-                    _xrefs.append((xref_frm, xref_to))
+                    # If the line has content after cleaning, proceed
+                    if clean_line:
+                        try:
+                            # Split the line and unpack into two variables
+                            frm_str, to_str = clean_line.split(',')
+
+                            # Convert each part from a hex string to an integer
+                            xref_frm = int(frm_str.strip(), 16)
+                            xref_to = int(to_str.strip(), 16)
+
+                            # Add the valid tuple to our list
+                            _xrefs.append((xref_frm, xref_to))
+                        except (ValueError, IndexError):
+                            # This catches malformed lines, e.g., missing a comma,
+                            # not a valid hex number, etc. We log it and continue.
+                            log(f'Skipping malformed line: "{line.strip()}"')
+                            continue
 
             return _xrefs
 
         except Exception as err:
-            log(f'No user xrefs loaded')
+            log(f'No user xrefs loaded or error during parsing')
             return []
 
     def add_user_xrefs(self) -> None:
