@@ -13,9 +13,14 @@
 # limitations under the License.
 
 from time import time, sleep
+from typing import Type, TypeVar
+from pydantic import BaseModel as PydanticBaseModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from base import BaseModel, ModelConfig
+
+# Type variable for Pydantic models
+T = TypeVar('T', bound=PydanticBaseModel)
 
 
 class GoogleModel(BaseModel):
@@ -105,18 +110,38 @@ class GoogleModel(BaseModel):
     def query(self, prompt: str) -> str:
         """
         Send query to Google's LLM.
-        
+
         Applies rate limiting and makes API request.
-        
+
         Args:
             prompt (str): Prompt to send to model
-            
+
         Returns:
             str: Model's response content
         """
         self.apply_rate_limit()
         client = self.get_client()
-        return client.invoke(prompt).content
+        response = client.invoke(prompt)
+        return response.content if isinstance(response.content, str) else str(response.content)
+
+    def query_structured(self, prompt: str, schema: Type[T]) -> T:
+        """
+        Send query to Google's LLM with structured output.
+
+        Uses LangChain's .with_structured_output() to ensure the response
+        conforms to the provided Pydantic schema.
+
+        Args:
+            prompt (str): Prompt to send to model
+            schema (Type[T]): Pydantic model class defining expected response structure
+
+        Returns:
+            T: Structured response conforming to the schema
+        """
+        self.apply_rate_limit()
+        client = self.get_client()
+        structured_client = client.with_structured_output(schema)
+        return structured_client.invoke(prompt)
     
 
 class OpenAIModel(BaseModel):
@@ -192,15 +217,34 @@ class OpenAIModel(BaseModel):
     def query(self, prompt: str) -> str:
         """
         Send query to OpenAI's LLM.
-        
+
         Makes API request and returns response content.
-        
+
         Args:
             prompt (str): Prompt to send to model
-            
+
         Returns:
             str: Model's response content
         """
         client = self.get_client()
-        return client.invoke(prompt).content
+        response = client.invoke(prompt)
+        return response.content if isinstance(response.content, str) else str(response.content)
+
+    def query_structured(self, prompt: str, schema: Type[T]) -> T:
+        """
+        Send query to OpenAI's LLM with structured output.
+
+        Uses LangChain's .with_structured_output() to ensure the response
+        conforms to the provided Pydantic schema.
+
+        Args:
+            prompt (str): Prompt to send to model
+            schema (Type[T]): Pydantic model class defining expected response structure
+
+        Returns:
+            T: Structured response conforming to the schema
+        """
+        client = self.get_client()
+        structured_client = client.with_structured_output(schema)
+        return structured_client.invoke(prompt)
     

@@ -169,8 +169,49 @@ class LLMProcessor:
 
     def process_chunk(self, chunk: List[Any], prompt_type: PromptType, **kwargs) -> Any:
         """Process a single chunk of items through the LLM."""
+        # Try structured output first, fall back to traditional parsing if needed
+        try:
+            return self.process_chunk_structured(chunk, prompt_type, **kwargs)
+        except Exception as e:
+            log(f"Structured output failed, falling back to traditional parsing: {str(e)}")
+            return self.process_chunk_traditional(chunk, prompt_type, **kwargs)
+
+    def process_chunk_structured(self, chunk: List[Any], prompt_type: PromptType, **kwargs) -> Any:
+        """Process a single chunk of items through the LLM using structured output."""
         prompt_template = self._prompts[prompt_type]
-        
+        schema = prompt_template.get_response_schema()
+
+        if prompt_type == PromptType.CATEGORIZER:
+            prompt = prompt_template.format(
+                items=chunk,
+                categories=kwargs.get("categories", []),
+                type=kwargs.get("type", "api")
+            )
+            structured_response = self.model.query_structured(prompt, schema)
+            # Convert structured response to expected format
+            return self._convert_categorizer_response(structured_response, kwargs.get("categories", []))
+
+        elif prompt_type == PromptType.ARTIFACT_ANALYZER:
+            artifacts_dict = self.create_artifacts_dict(chunk)
+            prompt = prompt_template.format(artifacts=artifacts_dict)
+            structured_response = self.model.query_structured(prompt, schema)
+            # Convert structured response to expected format
+            return self._convert_artifact_analyzer_response(structured_response)
+
+        elif prompt_type == PromptType.CLUSTER_ANALYZER:
+            # For cluster analysis, chunk contains raw formatted cluster data
+            prompt = prompt_template.format(cluster_data=chunk[0])
+            structured_response = self.model.query_structured(prompt, schema)
+            # Convert structured response to expected format
+            return self._convert_cluster_analyzer_response(structured_response)
+
+        else:
+            raise ValueError(f"Unsupported prompt type: {prompt_type}")
+
+    def process_chunk_traditional(self, chunk: List[Any], prompt_type: PromptType, **kwargs) -> Any:
+        """Process a single chunk of items through the LLM using traditional string parsing."""
+        prompt_template = self._prompts[prompt_type]
+
         if prompt_type == PromptType.CATEGORIZER:
             prompt = prompt_template.format(
                 items=chunk,
@@ -179,22 +220,53 @@ class LLMProcessor:
             )
             response = self.model.query(prompt)
             return prompt_template.parse_response(response, categories=kwargs.get("categories", []))
-            
+
         elif prompt_type == PromptType.ARTIFACT_ANALYZER:
             artifacts_dict = self.create_artifacts_dict(chunk)
             prompt = prompt_template.format(artifacts=artifacts_dict)
             response = self.model.query(prompt)
             return prompt_template.parse_response(response)
-            
+
         elif prompt_type == PromptType.CLUSTER_ANALYZER:
             # For cluster analysis, chunk contains raw formatted cluster data
-            prompt = prompt_template.format(cluster_data=chunk[0]) # Take first item since it's our formatted string
+            prompt = prompt_template.format(cluster_data=chunk[0])
             response = self.model.query(prompt)
-            return prompt_template.parse_response(response)     
-        
+            return prompt_template.parse_response(response)
+
         else:
             raise ValueError(f"Unsupported prompt type: {prompt_type}")
-        
+
+    def _convert_categorizer_response(self, structured_response, categories: List[str]) -> Dict[str, int]:
+        """Convert structured categorizer response to expected format."""
+        # The structured response should already be in the correct format
+        return structured_response.category_assignments
+
+    def _convert_artifact_analyzer_response(self, structured_response) -> Set[int]:
+        """Convert structured artifact analyzer response to expected format."""
+        # The structured response should already be in the correct format
+        return set(structured_response.interesting_indexes)
+
+    def _convert_cluster_analyzer_response(self, structured_response) -> Dict[str, Any]:
+        """Convert structured cluster analyzer response to expected format."""
+        # Convert the structured response to the expected dictionary format
+        result = {
+            "clusters": {},
+            "binary_description": structured_response.binary_description,
+            "binary_category": structured_response.binary_category,
+            "binary_report": structured_response.binary_report
+        }
+
+        # Convert cluster analyses to the expected format
+        for cluster_id, analysis in structured_response.clusters.items():
+            result["clusters"][cluster_id] = {
+                "label": analysis.label,
+                "description": analysis.description,
+                "relationships": analysis.relationships,
+                "function_prefix": analysis.function_prefix
+            }
+
+        return result
+
     def check_for_missed_items(self, original_items: List[Any], results: Dict[str, Any],
                         prompt_type: PromptType, **kwargs) -> Dict[str, Any]:
         """

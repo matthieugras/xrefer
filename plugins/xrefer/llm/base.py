@@ -14,10 +14,14 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, List, Dict, Optional
+from typing import Any, List, Dict, Optional, Type, TypeVar, Union
 from enum import Enum, auto
+from pydantic import BaseModel as PydanticBaseModel
 
 from xrefer.core.helpers import *
+
+# Type variable for Pydantic models
+T = TypeVar('T', bound=PydanticBaseModel)
 
 
 class PromptType(Enum):
@@ -134,11 +138,28 @@ class BaseModel(ABC):
     def query(self, prompt: str) -> str:
         """
         Send query to model and get response.
-        
+
         Args:
             prompt (str): Prompt to send to model
-            
+
         Returns:
             str: Model's response text
+        """
+        pass
+
+    @abstractmethod
+    def query_structured(self, prompt: str, schema: Type[T]) -> T:
+        """
+        Send query to model and get structured response.
+
+        Uses LangChain's .with_structured_output() to ensure the response
+        conforms to the provided Pydantic schema.
+
+        Args:
+            prompt (str): Prompt to send to model
+            schema (Type[T]): Pydantic model class defining expected response structure
+
+        Returns:
+            T: Structured response conforming to the schema
         """
         pass

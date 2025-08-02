@@ -9,3 +9,4 @@ langchain_google_genai
 langchain_openai
 tenacity
 python-statemachine
+pydantic

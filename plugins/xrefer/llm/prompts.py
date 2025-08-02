@@ -15,11 +15,20 @@
 import json
 from enum import Enum
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Set, Any
+from typing import Dict, List, Optional, Set, Any, Type, TypeVar
+from pydantic import BaseModel as PydanticBaseModel
 
-from xrefer.llm.templates.artifact_analyzer import ARTIFACT_ANALYZER_PROMPT 
+from xrefer.llm.templates.artifact_analyzer import ARTIFACT_ANALYZER_PROMPT
 from xrefer.llm.templates.categorizer import CATEGORIZER_PROMPT
 from xrefer.llm.templates.cluster_analyzer import CLUSTER_ANALYZER_PROMPT
+from xrefer.llm.schemas import (
+    CategorizerResponse,
+    ArtifactAnalyzerResponse,
+    ClusterAnalyzerResponse
+)
+
+# Type variable for Pydantic models
+T = TypeVar('T', bound=PydanticBaseModel)
 
 
 class PromptType(Enum):
@@ -31,25 +40,25 @@ class PromptType(Enum):
 class PromptTemplate(ABC):
     """
     Abstract base class for prompt templates.
-    
+
     Provides interface for formatting prompts and parsing responses
     for different types of LLM interactions.
     """
-    
+
     def __init__(self):
         self.template_text = self._load_template()
-    
+
     def _load_template(self) -> str:
         """Return the prompt template text."""
         return self.template_text
-            
+
     @abstractmethod
     def format(self, **kwargs) -> str:
         """
         Format the template with given parameters.
         """
         raise NotImplementedError
-        
+
     @abstractmethod
     def parse_response(self, response: str) -> Dict:
         """
@@ -57,11 +66,21 @@ class PromptTemplate(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def get_response_schema(self) -> Type[PydanticBaseModel]:
+        """
+        Get the Pydantic schema for structured output.
+
+        Returns:
+            Type[PydanticBaseModel]: Pydantic model class defining expected response structure
+        """
+        raise NotImplementedError
+
 
 class CategorizerPrompt(PromptTemplate):
     """
     Prompt template for API and library categorization.
-    
+
     Handles prompts for categorizing APIs and libraries into predefined categories,
     using an index-based response format for efficiency.
     """
@@ -69,6 +88,10 @@ class CategorizerPrompt(PromptTemplate):
     def __init__(self):
         self.template_text = CATEGORIZER_PROMPT
         super().__init__()
+
+    def get_response_schema(self) -> Type[PydanticBaseModel]:
+        """Get the Pydantic schema for categorizer responses."""
+        return CategorizerResponse
     
     def format(self, items: List[str], categories: List[str], type: str = "api") -> str:
         """
@@ -120,8 +143,8 @@ class CategorizerPrompt(PromptTemplate):
                 
             return categorized_items
             
-        except json.JSONDecodeError:
-            raise ValueError("Invalid JSON response from model")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse JSON response from model (fallback mode): {str(e)}")
 
 
 class ArtifactAnalyzerPrompt(PromptTemplate):
@@ -131,6 +154,10 @@ class ArtifactAnalyzerPrompt(PromptTemplate):
     def __init__(self):
         self.template_text = ARTIFACT_ANALYZER_PROMPT
         super().__init__()
+
+    def get_response_schema(self) -> Type[PydanticBaseModel]:
+        """Get the Pydantic schema for artifact analyzer responses."""
+        return ArtifactAnalyzerResponse
     
     def format(self, artifacts: Dict[str, Dict[int, str]]) -> str:
         """
@@ -160,8 +187,8 @@ class ArtifactAnalyzerPrompt(PromptTemplate):
         try:
             result = json.loads(response)
             return set(result["interesting_indexes"])
-        except (json.JSONDecodeError, KeyError):
-            raise ValueError("Invalid JSON response from model")
+        except (json.JSONDecodeError, KeyError) as e:
+            raise ValueError(f"Failed to parse JSON response from model (fallback mode): {str(e)}")
         
 
 class ClusterAnalyzerPrompt(PromptTemplate):
@@ -171,6 +198,10 @@ class ClusterAnalyzerPrompt(PromptTemplate):
     def __init__(self):
         self.template_text = CLUSTER_ANALYZER_PROMPT
         super().__init__()
+
+    def get_response_schema(self) -> Type[PydanticBaseModel]:
+        """Get the Pydantic schema for cluster analyzer responses."""
+        return ClusterAnalyzerResponse
     
     def format(self, cluster_data: str) -> str:
         """
@@ -235,8 +266,8 @@ class ClusterAnalyzerPrompt(PromptTemplate):
             
             return result
             
-        except json.JSONDecodeError:
-            raise ValueError("Invalid JSON response from model")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse JSON response from model (fallback mode): {str(e)}")
         except Exception as e:
             raise ValueError(f"Error parsing response: {str(e)}")
         
