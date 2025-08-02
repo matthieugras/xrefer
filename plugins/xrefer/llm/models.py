@@ -123,10 +123,13 @@ class GoogleModel(BaseModel):
         Returns:
             T: Structured response conforming to the schema
         """
+        log(f"Querying Google with prompt: {prompt}, schema: {schema}")
         self.apply_rate_limit()
         client = self.get_client()
         structured_client = client.with_structured_output(schema)
-        return structured_client.invoke(prompt)
+        return_value = structured_client.invoke(prompt)
+        log(f"Google returned: {return_value}")
+        return return_value
 
 
 class OpenAIModel(BaseModel):
