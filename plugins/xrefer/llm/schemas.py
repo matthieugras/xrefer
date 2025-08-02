@@ -20,7 +20,7 @@ enabling the use of LangChain's .with_structured_output() method to
 ensure reliable JSON responses from language models.
 """
 
-from typing import Dict, List, Any
+from typing import Dict, List
 from pydantic import BaseModel, Field
 
 

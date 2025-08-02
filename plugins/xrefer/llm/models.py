@@ -17,8 +17,8 @@ from typing import Type, TypeVar
 from pydantic import BaseModel as PydanticBaseModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
-from xrefer.llm.base import BaseModel, ModelConfig
-from xrefer.core.helpers import log
+from base import BaseModel, ModelConfig
+from core.helpers import log
 
 # Type variable for Pydantic models
 T = TypeVar("T", bound=PydanticBaseModel)
@@ -123,13 +123,10 @@ class GoogleModel(BaseModel):
         Returns:
             T: Structured response conforming to the schema
         """
-        log(f"Querying Google with prompt: {prompt}, schema: {schema}")
         self.apply_rate_limit()
         client = self.get_client()
-        structured_client = client.with_structured_output(schema)
-        return_value = structured_client.invoke(prompt)
-        log(f"Google returned: {return_value}")
-        return return_value
+        structured_client = client.with_structured_output(schema, method="json_mode")
+        return structured_client.invoke(prompt)
 
 
 class OpenAIModel(BaseModel):
