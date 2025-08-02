@@ -169,12 +169,7 @@ class LLMProcessor:
 
     def process_chunk(self, chunk: List[Any], prompt_type: PromptType, **kwargs) -> Any:
         """Process a single chunk of items through the LLM."""
-        # Try structured output first, fall back to traditional parsing if needed
-        try:
-            return self.process_chunk_structured(chunk, prompt_type, **kwargs)
-        except Exception as e:
-            log(f"Structured output failed, falling back to traditional parsing: {str(e)}")
-            return self.process_chunk_traditional(chunk, prompt_type, **kwargs)
+        return self.process_chunk_structured(chunk, prompt_type, **kwargs)
 
     def process_chunk_structured(self, chunk: List[Any], prompt_type: PromptType, **kwargs) -> Any:
         """Process a single chunk of items through the LLM using structured output."""
@@ -204,34 +199,6 @@ class LLMProcessor:
             structured_response = self.model.query_structured(prompt, schema)
             # Convert structured response to expected format
             return self._convert_cluster_analyzer_response(structured_response)
-
-        else:
-            raise ValueError(f"Unsupported prompt type: {prompt_type}")
-
-    def process_chunk_traditional(self, chunk: List[Any], prompt_type: PromptType, **kwargs) -> Any:
-        """Process a single chunk of items through the LLM using traditional string parsing."""
-        prompt_template = self._prompts[prompt_type]
-
-        if prompt_type == PromptType.CATEGORIZER:
-            prompt = prompt_template.format(
-                items=chunk,
-                categories=kwargs.get("categories", []),
-                type=kwargs.get("type", "api")
-            )
-            response = self.model.query(prompt)
-            return prompt_template.parse_response(response, categories=kwargs.get("categories", []))
-
-        elif prompt_type == PromptType.ARTIFACT_ANALYZER:
-            artifacts_dict = self.create_artifacts_dict(chunk)
-            prompt = prompt_template.format(artifacts=artifacts_dict)
-            response = self.model.query(prompt)
-            return prompt_template.parse_response(response)
-
-        elif prompt_type == PromptType.CLUSTER_ANALYZER:
-            # For cluster analysis, chunk contains raw formatted cluster data
-            prompt = prompt_template.format(cluster_data=chunk[0])
-            response = self.model.query(prompt)
-            return prompt_template.parse_response(response)
 
         else:
             raise ValueError(f"Unsupported prompt type: {prompt_type}")

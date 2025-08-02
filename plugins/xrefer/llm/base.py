@@ -133,19 +133,6 @@ class BaseModel(ABC):
         Implementations should handle provider-specific rate limiting.
         """
         pass
-        
-    @abstractmethod
-    def query(self, prompt: str) -> str:
-        """
-        Send query to model and get response.
-
-        Args:
-            prompt (str): Prompt to send to model
-
-        Returns:
-            str: Model's response text
-        """
-        pass
 
     @abstractmethod
     def query_structured(self, prompt: str, schema: Type[T]) -> T:
