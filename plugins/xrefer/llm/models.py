@@ -17,8 +17,8 @@ from typing import Type, TypeVar
 from pydantic import BaseModel as PydanticBaseModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
-from base import BaseModel, ModelConfig
-from core.helpers import log
+from xrefer.llm.base import BaseModel, ModelConfig
+from xrefer.core.helpers import log
 
 # Type variable for Pydantic models
 T = TypeVar("T", bound=PydanticBaseModel)
