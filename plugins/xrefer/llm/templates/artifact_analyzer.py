@@ -298,13 +298,6 @@ Ensure that the JSON is correctly formatted and can be parsed without errors.
 }
 ```
 
-**Example Output:**
-
-```
-{
-  "interesting_indexes": [2, 3, 4, 7]
-}
-```
 
 Instructions:
 
@@ -334,5 +327,5 @@ Remember:
     5) Be less restrictive in what you include.
 
 
-Begin analyzing the artifacts and provide raw JSON output without quotes or code snippets. Do NOT wrap the JSON in code fences or formatting. The input is as follows:
+Begin analyzing the artifacts and provide raw JSON output without quotes or code snippets. The input is as follows:
 '''

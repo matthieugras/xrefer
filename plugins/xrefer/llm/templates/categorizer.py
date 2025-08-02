@@ -122,17 +122,8 @@ Input format:
   ...
 ]
 
-Output format:
-{
-  "category_assignments": {
-    "0": 0,    // category index for item index 0
-    "1": 0,    // category index for item index 1
-    "2": 3,    // category index for item index 2
-    ...
-  }
-}
 
-Return only the JSON and do not include any explanatory text. Do not wrap the JSON in code fences or formatting. Ensure all items are assigned a category index. Do not miss any item.
+Ensure all items are assigned a category index. Do not miss any item.
 
 {{ITEMS}}
 '''

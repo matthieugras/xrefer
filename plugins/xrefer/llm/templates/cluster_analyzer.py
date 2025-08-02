@@ -81,34 +81,12 @@ ATM Malware:	A program whose primary purpose is to manipulate ATM machines to il
 Utility:	A program that has a specialized purpose that does not fit into any other defined category (such as keylogger, sniffer, or credential theft). Examples may include tools designed to overwrite or clear log files, encode or decode files, etc.
 Undetermined: A program which doesn't fall in any of the above categories, OR appears to be benign.
 
-Format your response as a JSON object that includes the cluster analyses (with cluster IDs as keys) under a "clusters" parent key, along with the binary description and category. Is it IMPORTANT that when referring to other clusters in relationships, use formatting like cluster.id.xxxx such that if you're refering to cluster 1 it would read as cluster.id.0001. Following is an example of the expected JSON object:
-{
-    "clusters": {
-        "cluster_12": {
-            "label": "Network Communication Module",
-            "description": "Implements custom protocol for C2 communication",
-            "relationships": "Provides encrypted channel used by cluster.id.0067",
-            "function_prefix:" "netmod"
-        },
-        "cluster_67": {
-            "label": "Command Execution Module",
-            "description": "Executes commands received from the network",
-            "relationships": "Uses communication channel from cluster.id.0012",
-            "function_prefix:" "cmd"
-        }
-    },
-    "binary_category": "Backdoor",
-    "binary_description": "This binary is a backdoor that allows remote command execution via a custom encrypted protocol.",
-    "binary_report": "The malware is a Backdoor that can connect to it's C2 (command and control) server over a custom protocol. The malware has the capability to...
-}
-
 Focus on:
 - Technical behaviors revealed by artifacts
 - How functions work together within each cluster
 - How clusters build upon each other's functionality
 - Common malware patterns and techniques
 
-Ensure descriptions are clear and precise. Use technical terms where appropriate. Return only the JSON and do not include any explanatory text. Do NOT wrap the JSON in code fences or formatting.
-All the required keys should be present in all respective JSON values. Even if a cluster does not have relevant data for a particular field, you should still include the key. For example: "relationships": "None".
+Even if a cluster does not have relevant data for a particular field, you should still include the key. For example: "relationships": "None".
 Do not use backslashes, string quotes or new lines in the binary_report.
 '''

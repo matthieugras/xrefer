@@ -1,1 +1,4 @@
 .vscode/settings.json
+plugins/xrefer/__pycache__
+plugins/xrefer/core/__pycache__
+plugins/xrefer/llm/__pycache__
